@@ -23,7 +23,7 @@ public class TDChainConnection {
             "open-tdcb-node3.tdchain.cn",
             "open-tdcb-node4.tdchain.cn"};
 
-    protected final static String keystorePath = "src/main/resources/0x66ab53d956cc3c274456ca59332836d3.pfx";
+    protected final static String keystorePath = TDChainConnection.class.getClassLoader().getResource("0x66ab53d956cc3c274456ca59332836d3.pfx").getPath();
     protected final static String keystorePasswd = "beyond3339280";
 
     //# Access to Tiandeyun block chain port, default is18088
@@ -59,16 +59,12 @@ public class TDChainConnection {
         }
     }
 
-    public static void storeMessageOnChain() {
+    public static String storeMessageOnChain(String key, Map<String, Object> data, String type) {
         //# Construct a transaction information
         Trans trans = new Trans();
-        trans.setKey("warne");//# Key is the dimension of current transactions
-        Map<String, Object> data = new HashMap<>();
-        data.put("name", "warne");
-        data.put("age", 20);
-        data.put("where", "I am tian de technology.");
+        trans.setKey(key);//# Key is the dimension of current transactions
         trans.setData(JSON.toJSONString(data));
-        trans.setType("user_info");
+        trans.setType(type);
         trans.setTimestamp(new Date().getTime());
 
         //# Initiate a transaction to cloud block chain services
@@ -76,29 +72,21 @@ public class TDChainConnection {
         if (result.isSuccess()) {
             //# Determine success based on the status of returned results
             System.out.println("\n===> add trans success.");
+            return "success";
         } else {
             System.out.println("\n===> add trans fail.");
+            return "fail";
         }
     }
 
-    public static void main(String[] args) {
-        //第一个条件：姓名等于=xiaoming  的
-        Condition c1 = new Condition("name", BQL.Relationship.equal, "xiaoming");
-
-        //第二个条件：年龄大于18岁 的
-        Condition c2 = new Condition("age", BQL.Relationship.greater, 18);
-
-        //条件c1和c2是并且关系，一次查询可同时支持10个条件对象Condition
-        c1.setAnd(c2);//相当于: name=="xiaoming" && age > 18
-
+    public static Result queryMessageOnChain(Condition c1) {
         //BQL区块链面向对象查询条件，根据k、v条件查询交易列表。
         BQL bql = new BQL();
         bql.setPage(1);//默认查询第一页
         bql.setCondition(c1);
 
+        Result result = connection.getNewTransByBQL(bql);
         try {
-            Result result = connection.getNewTransByBQL(bql);
-
             if (result.isSuccess()) {
                 BQLResult bqlResult = (BQLResult) result.getEntity();
                 System.out.println("bqlResult page=" + bqlResult.getPage());//page int 获取本次返回的页码坐标，页码坐标最小是：1 （俗称第一页）
@@ -112,9 +100,16 @@ public class TDChainConnection {
             } else {
                 System.out.println("\n===> query new trans fail.");
             }
-            System.out.println(result);
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return result;
+    }
+
+    public static void main(String[] args) {
+        Condition c1 = new Condition("name", BQL.Relationship.equal, "xiaowang");
+        Result result = queryMessageOnChain(c1);
+        System.out.println(result);
+
     }
 }
